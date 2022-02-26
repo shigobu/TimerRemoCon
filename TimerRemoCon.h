@@ -29,7 +29,7 @@ enum ModeMessage{
   AlarmDetail,
   TimeSettingDetail,
 };
-/*
+
 void SetModeMessage();
 ModeMessage GetModeMessage();
 void DispDateTime();
@@ -41,5 +41,5 @@ void AlarmMode();
 void TimeSettingMode();
 char GetCharFromButton(buttonStatus button);
 void SetLCDbacklight(bool isOn);
-*/
+
 #endif
