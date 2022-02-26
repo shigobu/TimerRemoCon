@@ -442,7 +442,7 @@ void TimeSettingMode()
   lcd.cursor();
   lcd.blink();
 
-  dateTime dt;
+  RX8900.getDateTime(&tim);
   buttonStatus button;
 
   //RX8900は、2099年まで対応なので、下二桁の設定を行う。
@@ -451,11 +451,11 @@ year1Input:
   button = WaitForButton();
   if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
     lcd.print(GetCharFromButton(button));
-    dt.year = (int)button * 10;
+    tim.year = (int)button * 10 + tim.year % 10;
   }
-  // else if(button == buttonStatus::ENTER){
-  //   lcd.setCursor(3,0);
-  // }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
   else if (button == buttonStatus::BC) {
     //キャンセル・終了。
     return;
@@ -469,7 +469,10 @@ year2Input:
   button = WaitForButton();
   if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
     lcd.print(GetCharFromButton(button));
-    dt.year += (int)button;
+    tim.year = tim.year / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
     goto year1Input;
@@ -483,7 +486,10 @@ month1Input:
   button = WaitForButton();
   if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM1) {
     lcd.print(GetCharFromButton(button));
-    dt.month = (int)button * 10;
+    tim.month = (int)button * 10 + tim.month % 10;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
     goto year2Input;
@@ -492,7 +498,59 @@ month1Input:
     goto month1Input;
   }
 
-  WaitForButton();
+month2Input:
+  lcd.setCursor(6, 0);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.month = tim.month / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto month1Input;
+  }
+  else {
+    goto month2Input;
+  }
+
+day1Input:
+  lcd.setCursor(8, 0);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM3) {
+    lcd.print(GetCharFromButton(button));
+    tim.day = (int)button * 10 + tim.day % 10;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto month2Input;
+  }
+  else {
+    goto day1Input;
+  }
+
+day2Input:
+  lcd.setCursor(9, 0);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.day = tim.day / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto day1Input;
+  }
+  else {
+    goto day2Input;
+  }
+
+  RX8900.setDateTime(&tim);
+
   lcd.noCursor();
   lcd.noBlink();
 }
