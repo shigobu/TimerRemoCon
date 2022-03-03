@@ -3,7 +3,7 @@
 #include <LiquidCrystal.h> // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
 #include <avr/pgmspace.h>
 #include <Wire.h>
-#include  "RX8900.h"
+#include "RX8900.h"
 #include "TimerRemoCon.h"
 
 const int LCDBacklightPin = 4;
@@ -547,6 +547,108 @@ day2Input:
   }
   else {
     goto day2Input;
+  }
+
+hour1Input:
+  lcd.setCursor(0, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.hour = (int)button * 10 + tim.hour % 10;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto day2Input;
+  }
+  else {
+    goto hour1Input;
+  }
+
+hour2Input:
+  lcd.setCursor(1, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.hour = tim.hour / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto hour1Input;
+  }
+  else {
+    goto hour2Input;
+  }
+
+min1Input:
+  lcd.setCursor(3, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.minute = (int)button * 10 + tim.minute % 10;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto hour2Input;
+  }
+  else {
+    goto min1Input;
+  }
+
+min2Input:
+  lcd.setCursor(4, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.minute = tim.minute / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto min1Input;
+  }
+  else {
+    goto min2Input;
+  }
+
+sec1Input:
+  lcd.setCursor(6, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.second = (int)button * 10 + tim.second % 10;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto min2Input;
+  }
+  else {
+    goto sec1Input;
+  }
+
+sec2Input:
+  lcd.setCursor(7, 1);
+  button = WaitForButton();
+  if (button >= buttonStatus::NUM0 && button <= buttonStatus::NUM9) {
+    lcd.print(GetCharFromButton(button));
+    tim.second = tim.second / 10 * 10 + (int)button;
+  }
+  else if(button == buttonStatus::ENTER){
+    //次の桁へ進む。何もしない。
+  }
+  else if (button == buttonStatus::BC) {
+    goto sec1Input;
+  }
+  else {
+    goto sec2Input;
   }
 
   RX8900.setDateTime(&tim);
