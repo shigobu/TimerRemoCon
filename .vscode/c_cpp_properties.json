@@ -16,12 +16,10 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "C:\\Users\\笠松茂信\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.4\\cores\\arduino",
-                "C:\\Users\\笠松茂信\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.4\\variants\\standard",
                 "D:\\茂信\\Documents\\Arduino\\libraries\\ResKeypad",
                 "D:\\茂信\\Documents\\Arduino\\libraries\\KanaLiquidCrystal",
                 "C:\\Program Files (x86)\\Arduino\\libraries\\LiquidCrystal\\src",
-                "C:\\Users\\笠松茂信\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.4\\libraries\\Wire\\src"
+                "C:\\Program Files (x86)\\Arduino\\hardware\tools\\avr\\avr\\include",
             ],
             "forcedInclude": [
                 "C:\\Users\\笠松茂信\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.4\\cores\\arduino\\Arduino.h"

@@ -31,47 +31,47 @@
 #define SAT 0x40
 
 /*
-https://smtengkapi.com/engineer-arduino-rtc
-から引用
+  https://smtengkapi.com/engineer-arduino-rtc
+  から引用
 */
 
 struct dateTime {
-    uint8_t second;             // 0-59
-    uint8_t minute;             // 0-59
-    uint8_t hour;               // 0-23
-    uint8_t week;               // 0x01(Sun)-0x40(Sat)各ビットをセットする
-    uint8_t day;                // 1-31
-    uint8_t month;              // 1-12
-    uint8_t year;               // 00-99
+  uint8_t second;             // 0-59
+  uint8_t minute;             // 0-59
+  uint8_t hour;               // 0-23
+  uint8_t week;               // 0x01(Sun)-0x40(Sat)各ビットをセットする
+  uint8_t day;                // 1-31
+  uint8_t month;              // 1-12
+  uint8_t year;               // 00-99
 };
 
-enum RTC_MODE_TYP{
-    RTC_IDLE = 0,
-    RTC_RX,
-    RTC_RX_END,
-    RTC_WRITE,
-    RTC_MODE_MAX
+enum RTC_MODE_TYP {
+  RTC_IDLE = 0,
+  RTC_RX,
+  RTC_RX_END,
+  RTC_WRITE,
+  RTC_MODE_MAX
 };
 
-class RX8900Class{
-    public:
-        void begin();
-        void begin(struct dateTime *dt);
-        void setDateTime(struct dateTime *dt);
-        void getDateTime(struct dateTime *dt);
-        void getTemp(uint8_t *temp);
-        void setRegisters(uint8_t address, int numData, uint8_t *data);
-        void getRegisters(uint8_t address, int numData, uint8_t *data);
-    private:
-        int decimalToBCD(int decimal);
-        int BCDToDecimal(int bcd);      
+class RX8900Class {
+  public:
+    void begin();
+    void begin(struct dateTime *dt);
+    void setDateTime(struct dateTime *dt);
+    void getDateTime(struct dateTime *dt);
+    void getTemp(uint8_t *temp);
+    void setRegisters(uint8_t address, int numData, uint8_t *data);
+    void getRegisters(uint8_t address, int numData, uint8_t *data);
+  private:
+    int decimalToBCD(int decimal);
+    int BCDToDecimal(int bcd);
 };
 #endif
 
 #ifdef RTC_C
-    #define GLOBAL
+#define GLOBAL
 #else
-    #define GLOBAL extern
+#define GLOBAL extern
 #endif
 
 GLOBAL RX8900Class RX8900;

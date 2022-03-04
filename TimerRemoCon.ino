@@ -2,6 +2,7 @@
 #include <KanaLiquidCrystal.h> // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
 #include <LiquidCrystal.h> // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
 #include <avr/pgmspace.h>
+#include <time.h>
 #include <Wire.h>
 #include "RX8900.h"
 #include "TimerRemoCon.h"
@@ -149,9 +150,17 @@ void writeBigString(uint8_t *str, byte x, byte y) {
 
 void initBogFont()
 {
-  lcdNoKana.begin(16, 2);
   for (nb = 0; nb < 8; nb++ ) {                 // create 8 custom characters
     for (bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte( &custom[nb][bc] );
+    //カナ対応のライブラリを使用すると、うまくカスタム文字の登録ができないので、標準ライブラリの機能を使用。
+    lcdNoKana.createChar ( nb + 1, bb );
+  }
+}
+
+void initWeekFont()
+{
+  for (nb = 0; nb < 7; nb++ ) {                 // create 8 custom characters
+    for (bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte( &weekFont[nb][bc] );
     //カナ対応のライブラリを使用すると、うまくカスタム文字の登録ができないので、標準ライブラリの機能を使用。
     lcdNoKana.createChar ( nb + 1, bb );
   }
@@ -166,15 +175,17 @@ void setup() {
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
-
-  initBogFont();
+  lcdNoKana.begin(16, 2);
 
   SetLCDbacklight(true);
   lcd.clear();
   lcd.kanaOn();
-  lcd.print("ﾀｲﾏｰﾘﾓｺﾝ V0.1");
 
+  lcd.print("初期化中");
   RX8900.begin();
+  lcd.setCursor(0, 0);
+  lcd.print("ﾀｲﾏｰﾘﾓｺﾝ V0.1");
+  delay(1000);
 }
 
 void loop() {
@@ -277,6 +288,8 @@ ModeMessage GetModeMessage() {
 
 //LCDに時間を表示します。
 void DispDateTime() {
+  initWeekFont();
+
   RX8900.getDateTime(&tim);
   //日付
   lcd.setCursor(0, 0);
@@ -297,7 +310,8 @@ void DispDateTime() {
     lcd.print('0');
   }
   lcd.print(tim.day);
-  lcd.print("      ");
+
+  PrintWeekDayToLcd();
 
   //時間
   lcd.setCursor(0, 1);
@@ -323,6 +337,7 @@ void DispDateTime() {
 
 //大きい時間表示を行います
 void DispBigTime() {
+  initBogFont();
   RX8900.getDateTime(&tim);
   //時間
   String str = "";
@@ -453,7 +468,7 @@ year1Input:
     lcd.print(GetCharFromButton(button));
     tim.year = (int)button * 10 + tim.year % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -471,7 +486,7 @@ year2Input:
     lcd.print(GetCharFromButton(button));
     tim.year = tim.year / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -488,7 +503,7 @@ month1Input:
     lcd.print(GetCharFromButton(button));
     tim.month = (int)button * 10 + tim.month % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -505,7 +520,7 @@ month2Input:
     lcd.print(GetCharFromButton(button));
     tim.month = tim.month / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -522,7 +537,7 @@ day1Input:
     lcd.print(GetCharFromButton(button));
     tim.day = (int)button * 10 + tim.day % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -539,7 +554,7 @@ day2Input:
     lcd.print(GetCharFromButton(button));
     tim.day = tim.day / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -549,6 +564,8 @@ day2Input:
     goto day2Input;
   }
 
+  PrintWeekDayToLcd();
+
 hour1Input:
   lcd.setCursor(0, 1);
   button = WaitForButton();
@@ -556,7 +573,7 @@ hour1Input:
     lcd.print(GetCharFromButton(button));
     tim.hour = (int)button * 10 + tim.hour % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -573,7 +590,7 @@ hour2Input:
     lcd.print(GetCharFromButton(button));
     tim.hour = tim.hour / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -590,7 +607,7 @@ min1Input:
     lcd.print(GetCharFromButton(button));
     tim.minute = (int)button * 10 + tim.minute % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -607,7 +624,7 @@ min2Input:
     lcd.print(GetCharFromButton(button));
     tim.minute = tim.minute / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -624,7 +641,7 @@ sec1Input:
     lcd.print(GetCharFromButton(button));
     tim.second = (int)button * 10 + tim.second % 10;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -641,7 +658,7 @@ sec2Input:
     lcd.print(GetCharFromButton(button));
     tim.second = tim.second / 10 * 10 + (int)button;
   }
-  else if(button == buttonStatus::ENTER){
+  else if (button == buttonStatus::ENTER) {
     //次の桁へ進む。何もしない。
   }
   else if (button == buttonStatus::BC) {
@@ -655,6 +672,27 @@ sec2Input:
 
   lcd.noCursor();
   lcd.noBlink();
+}
+
+//LCDに曜日を表示します。
+void PrintWeekDayToLcd() {
+  lcd.setCursor(10, 0);
+  //time.hの機能を使用し、曜日の算出
+  tm timeHstruct;
+  timeHstruct.tm_sec = 0;
+  timeHstruct.tm_min = 0;
+  timeHstruct.tm_hour = 1;
+  timeHstruct.tm_mday = tim.day;
+  timeHstruct.tm_mon = tim.month - 1;
+  timeHstruct.tm_year = 2000 + tim.year - 1900;
+  //mktimeを呼ぶことで、曜日が計算され、引数で渡した構造体が変更される
+  mktime(&timeHstruct);
+
+  tim.week = GetRX8900WeekDayFromTimeHData(timeHstruct.tm_wday);
+  lcd.print("(");
+  lcd.write(timeHstruct.tm_wday + 1);
+  lcd.print(")");
+  lcd.print("   ");
 }
 
 //ボタン入力を文字データに変換します。
@@ -689,4 +727,50 @@ char GetCharFromButton(buttonStatus button)
 
 void SetLCDbacklight(bool isOn) {
   digitalWrite(LCDBacklightPin, isOn);
+}
+
+//RX8900の週情報からtime.hの週情報へ変換して返します。
+int8_t GetTimeHweekDayFromRX8900Data(uint8_t weekBitData) {
+  switch (weekBitData)
+  {
+    case SUN:
+      return _WEEK_DAYS_::SUNDAY;
+    case MON:
+      return _WEEK_DAYS_::MONDAY;
+    case TUE:
+      return _WEEK_DAYS_::TUESDAY;
+    case WED:
+      return _WEEK_DAYS_::WEDNESDAY;
+    case THU:
+      return _WEEK_DAYS_::THURSDAY;
+    case FRI:
+      return _WEEK_DAYS_::FRIDAY;
+    case SAT:
+      return _WEEK_DAYS_::SATURDAY;
+    default:
+      return _WEEK_DAYS_::SUNDAY;
+  }
+}
+
+//time.hの週情報からRX8900の週情報へ変換します。
+uint8_t GetRX8900WeekDayFromTimeHData(int8_t week) {
+  switch (week)
+  {
+    case _WEEK_DAYS_::SUNDAY:
+      return SUN;
+    case _WEEK_DAYS_::MONDAY:
+      return MON;
+    case _WEEK_DAYS_::TUESDAY:
+      return TUE;
+    case _WEEK_DAYS_::WEDNESDAY:
+      return WED;
+    case _WEEK_DAYS_::THURSDAY:
+      return THU;
+    case _WEEK_DAYS_::FRIDAY:
+      return FRI;
+    case _WEEK_DAYS_::SATURDAY:
+      return SAT;
+    default:
+      return SUN;
+  }
 }
