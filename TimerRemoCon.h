@@ -21,7 +21,6 @@ enum buttonStatus {
 
 enum ModeMessage {
   DateTime,
-  BigTime,
   Learn,
   Alarm,
   TimeSetting,
