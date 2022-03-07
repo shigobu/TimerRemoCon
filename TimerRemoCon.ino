@@ -28,10 +28,8 @@ ModeMessage message = ModeMessage::DateTime;
 unsigned long prevButtonMillis = 0;
 unsigned int LCDbacklightOnMillis = 5000;
 
-uint8_t bb[8];
-
-void initWeekFont()
-{
+void initWeekFont() {
+  uint8_t bb[8] = {0};
   for (int nb = 0; nb < 7; nb++ ) {
     for (int bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte( &weekFont[nb][bc] );
     //カナ対応のライブラリを使用すると、うまくカスタム文字の登録ができないので、標準ライブラリの機能を使用。
@@ -53,7 +51,7 @@ void setup() {
   lcd.clear();
   lcd.kanaOn();
 
-  lcd.print("初期化中");
+  lcd.print("ｼｮｷｶﾁｭｳ");
   RX8900.begin();
   lcd.setCursor(0, 0);
   lcd.print("ﾀｲﾏｰﾘﾓｺﾝ V0.1");
