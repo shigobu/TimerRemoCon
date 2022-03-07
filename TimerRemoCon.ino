@@ -197,31 +197,6 @@ void DispDateTime() {
 
 }
 
-//大きい時間表示を行います
-void DispBigTime() {
-  initBogFont();
-  RX8900.getDateTime(&tim);
-  //時間
-  String str = "";
-  if (tim.hour < 10) {
-    str += '0';
-  }
-  str += String(tim.hour);
-  str += ':';
-
-  if (tim.minute < 10) {
-    str += '0';
-  }
-  str += String(tim.minute);
-  writeBigString(str.c_str(), 0, 0);
-
-  lcd.setCursor(14, 1);
-  if (tim.second < 10) {
-    lcd.print('0');
-  }
-  lcd.print(tim.second);
-}
-
 //ボタンの押下状態を取得します。
 buttonStatus GetButton() {
   buttonStatus button = buttonStatus::NOT_PRESSED;
