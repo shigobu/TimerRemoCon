@@ -24,7 +24,6 @@ ResKeypad keypad2(AIN2, KeyNum, threshold);
 ResKeypad keypad1(AIN1, KeyNum, threshold);
 
 KanaLiquidCrystal lcd(8, 9, 10, 11, 12, 13);
-LiquidCrystal lcdNoKana(8, 9, 10, 11, 12, 13);
 
 dateTime tim;
 ModeMessage message = ModeMessage::DateTime;
@@ -34,9 +33,11 @@ unsigned int LCDbacklightOnMillis = 5000;
 
 const int IR_RECEIVE_PIN = 2;
 const int IR_SEND_PIN = 3;
-IRData irData[10];
 // irData配列の各要素に有効な値が入っているかどうかをフラグで表している。下桁から順に格納されている。
 int16_t irDataAvailables = 0;
+const int dataMaxNum = 10;
+IRData irData[dataMaxNum];
+AlarmSetting alarmSetting[dataMaxNum];
 
 void setup() {
   pinMode(LCDBacklightPin, OUTPUT);
@@ -45,7 +46,6 @@ void setup() {
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
-  lcdNoKana.begin(16, 2);
   initWeekFont();
 
   SetLCDbacklight(true);
@@ -109,13 +109,16 @@ void loop() {
   }
 }
 
+//フォントの登録
 void initWeekFont() {
+  //カナOnだと正常に機能しないっぽいので、カナOffにする。
+  lcd.kanaOff();
   uint8_t bb[8] = {0};
   for (int nb = 0; nb < 7; nb++) {
     for (int bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte(&weekFont[nb][bc]);
-    //カナ対応のライブラリを使用すると、うまくカスタム文字の登録ができないので、標準ライブラリの機能を使用。
-    lcdNoKana.createChar(nb + 1, bb);
+    lcd.createChar(nb + 1, bb);
   }
+  lcd.kanaOn();
 }
 
 //モードボタンの押下状態を確認して、モードの切り替えを行います。
@@ -328,7 +331,9 @@ numInput:
   IrReceiver.start(80000);
   //赤外線信号受信待機
   while (!IrReceiver.decode()) {
-    ;
+    if (GetButton() == buttonStatus::NOT_PRESSED) {
+      goto delayfinally;
+    }
   }
 
   if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_WAS_OVERFLOW) {
@@ -580,10 +585,12 @@ void PrintWeekDayToLcd() {
   mktime(&timeHstruct);
 
   tim.week = GetRX8900WeekDayFromTimeHData(timeHstruct.tm_wday);
+  lcd.kanaOff();
   lcd.print("(");
   lcd.write(timeHstruct.tm_wday + 1);
   lcd.print(")");
   lcd.print("   ");
+  lcd.kanaOn();
 }
 
 //ボタン入力を文字データに変換します。
