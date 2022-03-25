@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <KanaLiquidCrystal.h>  // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
 #include <LiquidCrystal.h>  // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
 #include <ResKeypad.h>
@@ -17,13 +18,14 @@ const int AIN2 = A0;
 const int AIN1 = A1;
 const int KeyNum = 7;
 PROGMEM const int threshold[KeyNum] = {
-  // 次の数列は、しなぷすのハード製作記の回路設計サービスで計算して得られたもの
-  42, 165, 347, 511, 641, 807, 965
-};
+    // 次の数列は、しなぷすのハード製作記の回路設計サービスで計算して得られたもの
+    42, 165, 347, 511, 641, 807, 965};
 ResKeypad keypad2(AIN2, KeyNum, threshold);
 ResKeypad keypad1(AIN1, KeyNum, threshold);
 
 KanaLiquidCrystal lcd(8, 9, 10, 11, 12, 13);
+//フォントの登録用
+LiquidCrystal lcdNoKana(8, 9, 10, 11, 12, 13);
 
 dateTime tim;
 ModeMessage message = ModeMessage::DateTime;
@@ -46,6 +48,7 @@ void setup() {
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
+  lcdNoKana.begin(16, 2);
   initWeekFont();
 
   SetLCDbacklight(true);
@@ -60,6 +63,9 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print(F("ﾀｲﾏｰﾘﾓｺﾝ V0.1"));
   delay(1000);
+
+  //データ読み込み
+  LoadFromEEPROM();
 }
 
 void loop() {
@@ -84,7 +90,7 @@ void loop() {
       break;
     case ModeMessage::LearnDetail:
       LearnMode();
-      message = ModeMessage::Learn;
+      message = ModeMessage::DateTime;
       break;
     case ModeMessage::Alarm:
       lcd.print(F("ｱﾗｰﾑ ﾓｰﾄﾞ       "));
@@ -93,7 +99,7 @@ void loop() {
       break;
     case ModeMessage::AlarmDetail:
       AlarmMode();
-      message = ModeMessage::Alarm;
+      message = ModeMessage::DateTime;
       break;
     case ModeMessage::TimeSetting:
       lcd.print(F("ｼﾞｶﾝ ｾｯﾃｲ       "));
@@ -104,6 +110,15 @@ void loop() {
       TimeSettingMode();
       message = ModeMessage::DateTime;
       break;
+    case ModeMessage::DeleteData:
+      lcd.print(F("ﾃﾞｰﾀ ｻｸｼﾞｮ       "));
+      lcd.setCursor(0, 1);
+      lcd.print(F("                "));
+      break;
+    case ModeMessage::DeleteDataDetail:
+      DeleteDataMode();
+      message = ModeMessage::DateTime;
+      break;
     default:
       break;
   }
@@ -111,14 +126,12 @@ void loop() {
 
 //フォントの登録
 void initWeekFont() {
-  //カナOnだと正常に機能しないっぽいので、カナOffにする。
-  lcd.kanaOff();
   uint8_t bb[8] = {0};
   for (int nb = 0; nb < 7; nb++) {
     for (int bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte(&weekFont[nb][bc]);
-    lcd.createChar(nb + 1, bb);
+    //カナ対応版のライブラリだと何故か正常に登録できなかったので、通常版を使用。kanaOff()を使用してもダメだった。
+    lcdNoKana.createChar(nb + 1, bb);
   }
-  lcd.kanaOn();
 }
 
 //モードボタンの押下状態を確認して、モードの切り替えを行います。
@@ -136,6 +149,9 @@ void SetModeMessage() {
         message = ModeMessage::TimeSetting;
         break;
       case ModeMessage::TimeSetting:
+        message = ModeMessage::DeleteData;
+        break;
+      case ModeMessage::DeleteData:
         message = ModeMessage::DateTime;
         break;
       default:
@@ -154,6 +170,22 @@ void SetModeMessage() {
       case ModeMessage::TimeSetting:
         message = ModeMessage::TimeSettingDetail;
         break;
+      case ModeMessage::DeleteData:
+        message = ModeMessage::DeleteDataDetail;
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (button == buttonStatus::BC) {
+    switch (message) {
+      case ModeMessage::Learn:
+      case ModeMessage::Alarm:
+      case ModeMessage::TimeSetting:
+      case ModeMessage::DeleteData:
+        message = ModeMessage::DateTime;
+        break;
       default:
         break;
     }
@@ -161,9 +193,7 @@ void SetModeMessage() {
 }
 
 //モードメッセージを取得します。
-ModeMessage GetModeMessage() {
-  return message;
-}
+ModeMessage GetModeMessage() { return message; }
 
 // LCDに時間を表示します。
 void DispDateTime() {
@@ -351,6 +381,8 @@ numInput:
   if (IrReceiver.decodedIRData.protocol != UNKNOWN) {
     irData[irDataIndex] = IrReceiver.decodedIRData;
     irDataAvailables |= 1 << irDataIndex;
+    // eepromへ保存
+    SaveToEEPROM();
     lcd.setCursor(0, 1);
     lcd.print(F("ﾄｳﾛｸｶﾝﾘｮｳ       "));
   }
@@ -363,6 +395,30 @@ finally:
   IrReceiver.stop();
   lcd.noCursor();
   lcd.noBlink();
+}
+
+// EEPROMへ保存します
+void SaveToEEPROM() {
+  int address = 0;
+  EEPROM.put(address, irDataAvailables);
+  address += sizeof(irDataAvailables);
+
+  EEPROM.put(address, irData);
+  address += sizeof(irData);
+
+  EEPROM.put(address, alarmSetting);
+}
+
+// EEPROMから読み込みます
+void LoadFromEEPROM() {
+  int address = 0;
+  EEPROM.get(address, irDataAvailables);
+  address += sizeof(irDataAvailables);
+
+  EEPROM.get(address, irData);
+  address += sizeof(irData);
+
+  EEPROM.get(address, alarmSetting);
 }
 
 //アラームモード本体
@@ -593,6 +649,54 @@ void PrintWeekDayToLcd() {
   lcd.kanaOn();
 }
 
+//データ削除本体
+void DeleteDataMode() {
+  lcd.setCursor(0, 0);
+  lcd.print(F("ﾘﾓｺﾝ･ｱﾗｰﾑﾃﾞｰﾀ ｦ "));
+  lcd.setCursor(0, 1);
+  lcd.print(F("ｻｸｼﾞｮ ｼﾏｽ Ok?   "));
+
+  buttonStatus button = WaitForButton();
+  if (button == buttonStatus::BC) {
+    return;
+  }
+
+  // EEPROMの初期化
+  lcd.setCursor(0, 0);
+  lcd.print(F("ｻｸｼﾞｮﾁｭｳ        "));
+  lcd.setCursor(0, 1);
+  lcd.print(F("               "));
+
+  lcd.setCursor(0, 1);
+  lcd.cursor();
+  lcd.blink();
+  long prevProgress = 0;
+  for (size_t i = 0; i < EEPROM.length(); i++) {
+    EEPROM.update(i, 0);
+    long progress = map(i, 0, EEPROM.length(), 0, 16);
+    if ((progress - prevProgress) > 0) {
+      lcd.write(0xff);
+      prevProgress = progress;
+    }
+  }
+  lcd.write(0xff);
+
+  //グローバル変数の初期化
+  irDataAvailables = 0;
+  IRData ir = IRData{};
+  AlarmSetting alarm = AlarmSetting{};
+  for (size_t i = 0; i < dataMaxNum; i++) {
+    irData[i] = ir;
+    alarmSetting[i] = alarm;
+  }
+
+  lcd.noCursor();
+  lcd.noBlink();
+  lcd.setCursor(0, 0);
+  lcd.print(F("ｻｸｼﾞｮ ｶﾝﾘｮｳ     "));
+  button = WaitForButton();
+}
+
 //ボタン入力を文字データに変換します。
 char GetCharFromButton(buttonStatus button) {
   switch (button) {
@@ -621,9 +725,7 @@ char GetCharFromButton(buttonStatus button) {
   }
 }
 
-void SetLCDbacklight(bool isOn) {
-  digitalWrite(LCDBacklightPin, isOn);
-}
+void SetLCDbacklight(bool isOn) { digitalWrite(LCDBacklightPin, isOn); }
 
 // RX8900の週情報からtime.hの週情報へ変換して返します。
 int8_t GetTimeHweekDayFromRX8900Data(uint8_t weekBitData) {
