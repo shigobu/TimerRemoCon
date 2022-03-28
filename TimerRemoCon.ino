@@ -428,7 +428,7 @@ void AlarmMode() {
   lcd.cursor();
   lcd.blink();
   uint8_t alarmDataIndex = 0;
-  PrintAlarmSetting(alarmDataIndex, 0, 1);
+  PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
 
   do {
     lcd.setCursor(5, 0);
@@ -436,7 +436,7 @@ void AlarmMode() {
     if (IsNumber(button)) {
       lcd.print(GetCharFromButton(button));
       alarmDataIndex = button;
-      PrintAlarmSetting(alarmDataIndex, 0, 1);
+      PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
       continue;
     } else if (button == buttonStatus::ENTER) {
       //次へ進む。
@@ -456,10 +456,9 @@ finally:
 }
 
 //指定のインデックスのアラーム設定情報をLCDに表示します。
-void PrintAlarmSetting(uint8_t settingIndex, uint8_t col, uint8_t row) {
-  alarmSetting[settingIndex];
+void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row) {
   lcd.setCursor(col, row);
-  switch (alarmSetting[settingIndex].week) {
+  switch (alarm.week) {
     case 0b1111111:
       //毎日
       lcd.print(F("ﾏｲﾆﾁ   "));
@@ -483,16 +482,16 @@ void PrintAlarmSetting(uint8_t settingIndex, uint8_t col, uint8_t row) {
   }
 
   //時間
-  if (alarmSetting[settingIndex].hour < 10) {
+  if (alarm.hour < 10) {
     lcd.print('0');
   }
-  lcd.print(alarmSetting[settingIndex].hour);
+  lcd.print(alarm.hour);
   lcd.print(":");
 
-  if (alarmSetting[settingIndex].minute < 10) {
+  if (alarm.minute < 10) {
     lcd.print('0');
   }
-  lcd.print(alarmSetting[settingIndex].minute);
+  lcd.print(alarm.minute);
 }
 
 //時間設定本体
