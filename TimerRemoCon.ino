@@ -319,8 +319,8 @@ void LearnMode() {
   lcd.cursor();
   lcd.blink();
 
-  int8_t irDataIndex = 0;
-  if (IsIrDataAvailable(irDataIndex)) {
+  int8_t alarmDataIndex = 0;
+  if (IsIrDataAvailable(alarmDataIndex)) {
     lcd.setCursor(0, 1);
     lcd.print(F("ﾃﾞｰﾀ ｱﾘ         "));
   } else {
@@ -333,8 +333,8 @@ numInput:
   buttonStatus button = WaitForButton();
   if (IsNumber(button)) {
     lcd.print(GetCharFromButton(button));
-    irDataIndex = button;
-    if (IsIrDataAvailable(irDataIndex)) {
+    alarmDataIndex = button;
+    if (IsIrDataAvailable(alarmDataIndex)) {
       lcd.setCursor(0, 1);
       lcd.print(F("ﾃﾞｰﾀ ｱﾘ         "));
     } else {
@@ -355,7 +355,7 @@ numInput:
   lcd.noCursor();
   lcd.noBlink();
   lcd.clear();
-  lcd.print(irDataIndex);
+  lcd.print(alarmDataIndex);
   lcd.print(F(" ﾊﾞﾝﾆﾄｳﾛｸｼﾏｽ  "));
 
   IrReceiver.start(80000);
@@ -378,8 +378,8 @@ numInput:
   }
 
   if (IrReceiver.decodedIRData.protocol != UNKNOWN) {
-    irData[irDataIndex] = IrReceiver.decodedIRData;
-    irDataAvailables |= 1 << irDataIndex;
+    irData[alarmDataIndex] = IrReceiver.decodedIRData;
+    irDataAvailables |= 1 << alarmDataIndex;
     // eepromへ保存
     SaveToEEPROM();
     lcd.setCursor(0, 1);
@@ -424,16 +424,75 @@ void LoadFromEEPROM() {
 void AlarmMode() {
   //テストコード
   lcd.clear();
-  lcd.print(F("ｿｳｼﾝ ﾃｽﾄ        "));
+  lcd.print(F("ｱﾗｰﾑ:0          "));
+  lcd.cursor();
+  lcd.blink();
+  uint8_t alarmDataIndex = 0;
+  PrintAlarmSetting(alarmDataIndex, 0, 1);
 
-  int8_t irDataIndex = 0;
+  do {
+    lcd.setCursor(5, 0);
+    buttonStatus button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      alarmDataIndex = button;
+      PrintAlarmSetting(alarmDataIndex, 0, 1);
+      continue;
+    } else if (button == buttonStatus::ENTER) {
+      //次へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      //キャンセル・終了。
+      goto finally;
+    } else {
+      //数字とEnterとBC以外は無視して、入力へ戻る。
+      continue;
+    }
+  } while (true);
 
-  buttonStatus button = WaitForButton();
-  if (IsNumber(button)) {
-    irDataIndex = button;
-    IrSender.write(&irData[irDataIndex], 3);
+finally:
+  lcd.noCursor();
+  lcd.noBlink();
+}
+
+//指定のインデックスのアラーム設定情報をLCDに表示します。
+void PrintAlarmSetting(uint8_t settingIndex, uint8_t col, uint8_t row) {
+  alarmSetting[settingIndex];
+  lcd.setCursor(col, row);
+  switch (alarmSetting[settingIndex].week) {
+    case 0b1111111:
+      //毎日
+      lcd.print(F("ﾏｲﾆﾁ   "));
+      break;
+    case 0b1000001:
+      //休日
+      lcd.print(F("ｷｭｳｼﾞﾂ "));
+      break;
+    case 0b0111110:
+      //平日
+      lcd.print(F("ﾍｲｼﾞﾂ  "));
+      break;
+    case 0b0000000:
+      //一回
+      lcd.print(F("ｲｯｶｲ   "));
+      break;
+    default:
+      //カスタム
+      lcd.print(F("ｶｽﾀﾑ   "));
+      break;
   }
-  delay(1000);
+
+  //時間
+  if (alarmSetting[settingIndex].hour < 10) {
+    lcd.print('0');
+  }
+  lcd.print(alarmSetting[settingIndex].hour);
+  lcd.print(":");
+
+  if (alarmSetting[settingIndex].minute < 10) {
+    lcd.print('0');
+  }
+  lcd.print(alarmSetting[settingIndex].minute);
 }
 
 //時間設定本体
