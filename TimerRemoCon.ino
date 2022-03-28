@@ -360,12 +360,11 @@ numInput:
 
   IrReceiver.start(80000);
   //赤外線信号受信待機
-  while (!IrReceiver.decode()) {
-    if (GetButton() == buttonStatus::NOT_PRESSED) {
-      goto delayfinally;
-    }
+  while (!IrReceiver.available()) {
+    ;
   }
 
+  IrReceiver.decode();
   if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_WAS_OVERFLOW) {
     lcd.setCursor(0, 1);
     lcd.print(F("ｴﾗｰ ﾐﾀｲｵｳｼﾝｺﾞｳ  "));
