@@ -429,14 +429,18 @@ void AlarmMode() {
   lcd.blink();
   uint8_t alarmDataIndex = 0;
   PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
+  buttonStatus button;
+  AlarmSetting newAlarmSetting;
 
-  do {
+alarmNumInput:
+  while (true) {
     lcd.setCursor(5, 0);
-    buttonStatus button = WaitForButton();
+    button = WaitForButton();
     if (IsNumber(button)) {
       lcd.print(GetCharFromButton(button));
       alarmDataIndex = button;
-      PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
+      newAlarmSetting = alarmSetting[alarmDataIndex];
+      PrintAlarmSetting(newAlarmSetting, 0, 1);
       continue;
     } else if (button == buttonStatus::ENTER) {
       //次へ進む。
@@ -448,7 +452,155 @@ void AlarmMode() {
       //数字とEnterとBC以外は無視して、入力へ戻る。
       continue;
     }
-  } while (true);
+  }
+
+  bool isCustom = false;
+weekNumInput:
+  PrintAlarmSetting(newAlarmSetting, 0, 1, true);
+  while (true) {
+    lcd.setCursor(0, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      switch (button) {
+        case buttonStatus::NUM0:
+          //毎日
+          lcd.print(F("0ﾏｲﾆﾁ   "));
+          newAlarmSetting.week = EVERY_DAY;
+          break;
+        case buttonStatus::NUM1:
+          //平日
+          lcd.print(F("1ﾍｲｼﾞﾂ  "));
+          newAlarmSetting.week = WEEK_DAY;
+          break;
+        case buttonStatus::NUM2:
+          //休日
+          lcd.print(F("2ｷｭｳｼﾞﾂ "));
+          newAlarmSetting.week = WEEK_END;
+          break;
+        case buttonStatus::NUM3:
+          //一回
+          newAlarmSetting.week = ONCE;
+          lcd.print(F("3ｲｯｶｲ   "));
+          break;
+        case buttonStatus::NUM4:
+          //カスタム
+          newAlarmSetting.week = 0b01000000;  //適当な値
+          lcd.print(F("4ｶｽﾀﾑ   "));
+          break;
+        default:
+          //何もしない
+          break;
+      }
+    } else if (button == buttonStatus::ENTER) {
+      switch (newAlarmSetting.week) {
+        case EVERY_DAY:
+        case WEEK_DAY:
+        case WEEK_END:
+        case ONCE:
+          isCustom = false;
+          break;
+        default:
+          isCustom = true;
+          break;
+      }
+      //次へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      //アラーム番号入力へ戻る。
+      goto alarmNumInput;
+    } else {
+      //数字とEnterとBC以外は無視して、入力へ戻る。
+      continue;
+    }
+  }
+
+  //カスタムの時の曜日設定
+  if (isCustom) {
+    newAlarmSetting.week = SetCustomWeekSetting();
+    lcd.setCursor(0, 0);
+    lcd.print(F("ｱﾗｰﾑ:"));
+    lcd.print(alarmDataIndex);
+    lcd.print(F("          "));
+  }
+
+  PrintAlarmSetting(newAlarmSetting, 0, 1, true);
+
+hour1Input:
+  while (true) {
+    lcd.setCursor(8, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      newAlarmSetting.hour = (int)button * 10 + newAlarmSetting.hour % 10;
+      break;
+    } else if (button == buttonStatus::ENTER) {
+      //次の桁へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      goto weekNumInput;
+    } else {
+      continue;
+    }
+  }
+
+hour2Input:
+  while (true) {
+    lcd.setCursor(9, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      newAlarmSetting.hour = newAlarmSetting.hour / 10 * 10 + (int)button;
+      break;
+    } else if (button == buttonStatus::ENTER) {
+      //次の桁へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      goto hour1Input;
+    } else {
+      continue;
+    }
+  }
+
+min1Input:
+  while (true) {
+    lcd.setCursor(11, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      newAlarmSetting.minute = (int)button * 10 + newAlarmSetting.minute % 10;
+      break;
+    } else if (button == buttonStatus::ENTER) {
+      //次の桁へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      goto hour2Input;
+    } else {
+      continue;
+    }
+  }
+
+min2Input:
+  while (true) {
+    lcd.setCursor(12, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      newAlarmSetting.minute = newAlarmSetting.minute / 10 * 10 + (int)button;
+      break;
+    } else if (button == buttonStatus::ENTER) {
+      //次の桁へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      goto min1Input;
+    } else {
+      continue;
+    }
+  }
+
+  //リモコン番号指定
+
+  alarmSetting[alarmDataIndex] = newAlarmSetting;
+  // SaveToEEPROM();
 
 finally:
   lcd.noCursor();
@@ -456,31 +608,10 @@ finally:
 }
 
 //指定のインデックスのアラーム設定情報をLCDに表示します。
-void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row) {
+void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row,
+                       bool printWeekNum = false) {
   lcd.setCursor(col, row);
-  switch (alarm.week) {
-    case 0b1111111:
-      //毎日
-      lcd.print(F("ﾏｲﾆﾁ   "));
-      break;
-    case 0b1000001:
-      //休日
-      lcd.print(F("ｷｭｳｼﾞﾂ "));
-      break;
-    case 0b0111110:
-      //平日
-      lcd.print(F("ﾍｲｼﾞﾂ  "));
-      break;
-    case 0b0000000:
-      //一回
-      lcd.print(F("ｲｯｶｲ   "));
-      break;
-    default:
-      //カスタム
-      lcd.print(F("ｶｽﾀﾑ   "));
-      break;
-  }
-
+  PrintWeekSetName(alarm.week, printWeekNum);
   //時間
   if (alarm.hour < 10) {
     lcd.print('0');
@@ -493,6 +624,50 @@ void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row) {
   }
   lcd.print(alarm.minute);
 }
+
+//週設定名をLCDに表示します。
+void PrintWeekSetName(uint8_t week, bool printWeekNum) {
+  switch (week) {
+    case EVERY_DAY:
+      if (printWeekNum) {
+        lcd.print(F("0"));
+      }
+      //毎日
+      lcd.print(F("ﾏｲﾆﾁ   "));
+      break;
+    case WEEK_DAY:
+      if (printWeekNum) {
+        lcd.print(F("1"));
+      }
+      //平日
+      lcd.print(F("ﾍｲｼﾞﾂ  "));
+      break;
+    case WEEK_END:
+      if (printWeekNum) {
+        lcd.print(F("2"));
+      }
+      //休日
+      lcd.print(F("ｷｭｳｼﾞﾂ "));
+      break;
+    case ONCE:
+      if (printWeekNum) {
+        lcd.print(F("3"));
+      }
+      //一回
+      lcd.print(F("ｲｯｶｲ   "));
+      break;
+    default:
+      if (printWeekNum) {
+        lcd.print(F("4"));
+      }
+      //カスタム
+      lcd.print(F("ｶｽﾀﾑ   "));
+      break;
+  }
+}
+
+//カスタム週設定をユーザーに促します。
+uint8_t SetCustomWeekSetting() {}
 
 //時間設定本体
 void TimeSettingMode() {

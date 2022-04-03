@@ -1,6 +1,11 @@
 #ifndef TIMER_REMO_CON_H
 #define TIMER_REMO_CON_H
 
+#define EVERY_DAY 0b1111111
+#define WEEK_DAY 0b0111110
+#define WEEK_END 0b1000001
+#define ONCE 0b0000000
+
 enum buttonStatus {
   NUM0,
   NUM1,
@@ -58,5 +63,8 @@ const uint8_t weekFont[][8] PROGMEM = {
     //土
     {0b00100, 0b00100, 0b11111, 0b00100, 0b00100, 0b00100, 0b11111, 0b00000},
 };
+
+void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row,
+                       bool printWeekNum = false);
 
 #endif
