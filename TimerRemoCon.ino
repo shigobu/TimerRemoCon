@@ -70,6 +70,12 @@ void setup() {
 }
 
 void loop() {
+  //時間更新 100ミリ秒毎に更新 なんか、毎回更新するのは忙しそうなので・・・
+  unsigned long span = millis() - prevGetTime;
+  if (span > 100) {
+    RX8900.getDateTime(&tim);
+  }
+
   // アラーム処理
   AlarmProcessing();
 
@@ -204,7 +210,6 @@ ModeMessage GetModeMessage() { return message; }
 
 // LCDに時間を表示します。
 void DispDateTime() {
-  RX8900.getDateTime(&tim);
   //日付
   lcd.setCursor(0, 0);
   lcd.print(20);
@@ -706,7 +711,6 @@ void TimeSettingMode() {
   lcd.cursor();
   lcd.blink();
 
-  RX8900.getDateTime(&tim);
   buttonStatus button;
 
   // RX8900は、2099年まで対応なので、下二桁の設定を行う。
