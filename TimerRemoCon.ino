@@ -598,9 +598,26 @@ min2Input:
   }
 
   //リモコン番号指定
+irIndexInput:
+  while (true) {
+    lcd.setCursor(14, 1);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      lcd.print(GetCharFromButton(button));
+      newAlarmSetting.irIndex = (uint8_t)button;
+      break;
+    } else if (button == buttonStatus::ENTER) {
+      //次の桁へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      goto min2Input;
+    } else {
+      continue;
+    }
+  }
 
   alarmSetting[alarmDataIndex] = newAlarmSetting;
-  // SaveToEEPROM();
+  SaveToEEPROM();
 
 finally:
   lcd.noCursor();
@@ -623,6 +640,9 @@ void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row,
     lcd.print('0');
   }
   lcd.print(alarm.minute);
+
+  lcd.print(F(" "));
+  lcd.print(alarm.irIndex);
 }
 
 //週設定名をLCDに表示します。
