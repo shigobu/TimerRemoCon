@@ -361,7 +361,9 @@ numInput:
   IrReceiver.start(80000);
   //赤外線信号受信待機
   while (!IrReceiver.available()) {
-    ;
+    if (GetButton() == buttonStatus::BC) {
+      return;
+    };
   }
 
   IrReceiver.decode();
