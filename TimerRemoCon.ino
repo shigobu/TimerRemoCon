@@ -630,6 +630,8 @@ finally:
 void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row,
                        bool printWeekNum = false) {
   lcd.setCursor(col, row);
+  lcd.print("                ");
+  lcd.setCursor(col, row);
   PrintWeekSetName(alarm.week, printWeekNum);
   //時間
   if (alarm.hour < 10) {
@@ -689,7 +691,7 @@ void PrintWeekSetName(uint8_t week, bool printWeekNum) {
 }
 
 //カスタム週設定をユーザーに促します。
-uint8_t SetCustomWeekSetting() {}
+uint8_t SetCustomWeekSetting() { return 0; }
 
 //時間設定本体
 void TimeSettingMode() {
