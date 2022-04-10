@@ -32,6 +32,7 @@ ModeMessage message = ModeMessage::DateTime;
 
 unsigned long prevButtonMillis = 0;
 unsigned int LCDbacklightOnMillis = 5000;
+unsigned long prevGetTime = 0;
 
 const int IR_RECEIVE_PIN = 2;
 const int IR_SEND_PIN = 3;
@@ -69,8 +70,11 @@ void setup() {
 }
 
 void loop() {
+  // アラーム処理
+  AlarmProcessing();
+
   // lcdバックライト処理
-  unsigned long span = millis() - prevButtonMillis;
+  span = millis() - prevButtonMillis;
   if (span > LCDbacklightOnMillis) {
     SetLCDbacklight(false);
   }
@@ -123,6 +127,9 @@ void loop() {
       break;
   }
 }
+
+//アラーム処理
+void AlarmProcessing() {}
 
 //フォントの登録
 void initWeekFont() {
@@ -432,7 +439,7 @@ void AlarmMode() {
   uint8_t alarmDataIndex = 0;
   PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
   buttonStatus button;
-  AlarmSetting newAlarmSetting;
+  AlarmSetting newAlarmSetting{0, 0, 0, 0, true, false};
 
 alarmNumInput:
   while (true) {
