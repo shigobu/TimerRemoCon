@@ -142,9 +142,11 @@ void AlarmProcessing() {
         alarmSetting[alarmIndex].isEnable && !alarmSetting[alarmIndex].isSent) {
       if ((alarmSetting[alarmIndex].week & tim.week) > 0) {
         //送信
+        IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
         alarmSetting[alarmIndex].isSent = true;
       } else if (alarmSetting[alarmIndex].week == 0) {
         //送信
+        IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
         alarmSetting[alarmIndex].isEnable = false;
         alarmSetting[alarmIndex].isSent = true;
       } else {
