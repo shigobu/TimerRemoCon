@@ -135,7 +135,26 @@ void loop() {
 }
 
 //アラーム処理
-void AlarmProcessing() {}
+void AlarmProcessing() {
+  for (size_t alarmIndex = 0; alarmIndex < dataMaxNum; alarmIndex++) {
+    if (alarmSetting[i].hour == tim.hour &&
+        alarmSetting[i].minute == tim.minute && alarmSetting[i].isEnable &&
+        !alarmSetting[i].isSent) {
+      if ((alarmSetting[i].week & tim.week) > 0) {
+        //送信
+        alarmSetting[i].isSent = true;
+      } else if (alarmSetting[i].week == 0) {
+        //送信
+        alarmSetting[i].isEnable = false;
+        alarmSetting[i].isSent = true;
+      } else {
+        //なにもしない
+      }
+    } else {
+      alarmSetting[i].isSent = false;
+    }
+  }
+}
 
 //フォントの登録
 void initWeekFont() {
