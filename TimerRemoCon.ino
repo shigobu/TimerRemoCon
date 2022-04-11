@@ -455,7 +455,6 @@ void LoadFromEEPROM() {
 
 //アラームモード本体
 void AlarmMode() {
-  //テストコード
   lcd.clear();
   lcd.print(F("ｱﾗｰﾑ:0          "));
   lcd.cursor();
