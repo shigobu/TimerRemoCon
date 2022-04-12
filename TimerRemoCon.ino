@@ -462,9 +462,9 @@ void AlarmMode() {
   lcd.cursor();
   lcd.blink();
   uint8_t alarmDataIndex = 0;
-  PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
-  buttonStatus button;
   AlarmSetting newAlarmSetting = alarmSetting[alarmDataIndex];
+  PrintAlarmSetting(newAlarmSetting, 0, 1);
+  buttonStatus button;
 
 alarmNumInput:
   while (true) {
