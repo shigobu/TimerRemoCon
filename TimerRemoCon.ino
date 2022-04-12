@@ -650,6 +650,8 @@ irIndexInput:
     }
   }
 
+  newAlarmSetting.isEnable = true;
+  newAlarmSetting.isSent = false;
   alarmSetting[alarmDataIndex] = newAlarmSetting;
   SaveToEEPROM();
 
