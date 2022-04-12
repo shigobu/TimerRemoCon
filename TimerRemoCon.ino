@@ -339,7 +339,7 @@ buttonStatus GetButton() {
       button = buttonStatus::BC;
       break;
   }
-  //ボタンが押されたら、現在時間を記録
+  //ボタンが押されたら、バックライトをつけて現在時間を記録
   if (button != buttonStatus::NOT_PRESSED) {
     SetLCDbacklight(true);
     prevButtonMillis = millis();
@@ -451,7 +451,13 @@ void SaveToEEPROM() {
   EEPROM.put(address, irData);
   address += sizeof(irData);
 
-  EEPROM.put(address, alarmSetting);
+  //アラーム無効にして保存
+  AlarmSetting tempAlarm[dataMaxNum];
+  for (size_t i = 0; i < dataMaxNum; i++) {
+    tempAlarm[i] = alarmSetting[i];
+    tempAlarm[i].isEnable = false;
+  }
+  EEPROM.put(address, tempAlarm);
 }
 
 // EEPROMから読み込みます
