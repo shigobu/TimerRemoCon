@@ -138,20 +138,31 @@ void loop() {
 void AlarmProcessing() {
   for (size_t alarmIndex = 0; alarmIndex < dataMaxNum; alarmIndex++) {
     if (alarmSetting[alarmIndex].hour == tim.hour &&
-        alarmSetting[alarmIndex].minute == tim.minute &&
-        alarmSetting[alarmIndex].isEnable && !alarmSetting[alarmIndex].isSent) {
+        alarmSetting[alarmIndex].minute == tim.minute) {
+      if (!alarmSetting[alarmIndex].isEnable) {
+        continue;
+      }
+
+      if (alarmSetting[alarmIndex].isSent) {
+        continue;
+      }
+
       if ((alarmSetting[alarmIndex].week & tim.week) > 0) {
         //送信
-        IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
+        if (IsIrDataAvailable(alarmIndex)) {
+          IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
+        }
         alarmSetting[alarmIndex].isSent = true;
       } else if (alarmSetting[alarmIndex].week == 0) {
         //送信
-        IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
+        if (IsIrDataAvailable(alarmIndex)) {
+          IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
+        }
         alarmSetting[alarmIndex].isEnable = false;
-        alarmSetting[alarmIndex].isSent = true;
       } else {
         //なにもしない
       }
+      alarmSetting[alarmIndex].isSent = true;
     } else {
       alarmSetting[alarmIndex].isSent = false;
     }
@@ -463,6 +474,12 @@ void AlarmMode() {
   lcd.blink();
   uint8_t alarmDataIndex = 0;
   AlarmSetting newAlarmSetting = alarmSetting[alarmDataIndex];
+  lcd.setCursor(7, 0);
+  if (newAlarmSetting.isEnable) {
+    lcd.print(F("1:ﾕｳｺｳ"));
+  } else {
+    lcd.print(F("0:ﾑｺｳ "));
+  }
   PrintAlarmSetting(newAlarmSetting, 0, 1);
   buttonStatus button;
 
@@ -474,6 +491,12 @@ alarmNumInput:
       lcd.print(GetCharFromButton(button));
       alarmDataIndex = button;
       newAlarmSetting = alarmSetting[alarmDataIndex];
+      lcd.setCursor(7, 0);
+      if (newAlarmSetting.isEnable) {
+        lcd.print(F("1:ﾕｳｺｳ"));
+      } else {
+        lcd.print(F("0:ﾑｺｳ "));
+      }
       PrintAlarmSetting(newAlarmSetting, 0, 1);
       continue;
     } else if (button == buttonStatus::ENTER) {
@@ -482,6 +505,33 @@ alarmNumInput:
     } else if (button == buttonStatus::BC) {
       //キャンセル・終了。
       goto finally;
+    } else {
+      //数字とEnterとBC以外は無視して、入力へ戻る。
+      continue;
+    }
+  }
+
+enableInput:
+  while (true) {
+    lcd.setCursor(7, 0);
+    button = WaitForButton();
+    if (IsNumber(button)) {
+      if (button == buttonStatus::NUM1) {
+        lcd.print(F("1:ﾕｳｺｳ"));
+        newAlarmSetting.isEnable = true;
+      } else if (button == buttonStatus::NUM0) {
+        lcd.print(F("0:ﾑｺｳ "));
+        newAlarmSetting.isEnable = false;
+      } else {
+        //なにもしない
+      }
+      continue;
+    } else if (button == buttonStatus::ENTER) {
+      //次へ進む。
+      break;
+    } else if (button == buttonStatus::BC) {
+      //キャンセル・終了。
+      goto alarmNumInput;
     } else {
       //数字とEnterとBC以外は無視して、入力へ戻る。
       continue;
@@ -650,7 +700,6 @@ irIndexInput:
     }
   }
 
-  newAlarmSetting.isEnable = true;
   newAlarmSetting.isSent = false;
   alarmSetting[alarmDataIndex] = newAlarmSetting;
   SaveToEEPROM();
