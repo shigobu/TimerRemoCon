@@ -464,7 +464,7 @@ void AlarmMode() {
   uint8_t alarmDataIndex = 0;
   PrintAlarmSetting(alarmSetting[alarmDataIndex], 0, 1);
   buttonStatus button;
-  AlarmSetting newAlarmSetting{0, 0, 0, 0, true, false};
+  AlarmSetting newAlarmSetting = alarmSetting[alarmDataIndex];
 
 alarmNumInput:
   while (true) {
