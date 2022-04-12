@@ -639,7 +639,7 @@ irIndexInput:
     if (IsNumber(button)) {
       lcd.print(GetCharFromButton(button));
       newAlarmSetting.irIndex = (uint8_t)button;
-      break;
+      continue;
     } else if (button == buttonStatus::ENTER) {
       //次の桁へ進む。
       break;
