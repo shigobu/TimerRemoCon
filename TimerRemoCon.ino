@@ -1,9 +1,11 @@
 #include <EEPROM.h>
 #include <KanaLiquidCrystal.h>  // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
 #include <LiquidCrystal.h>  // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
+#include <Narcoleptic.h>
 #include <ResKeypad.h>
 #include <Wire.h>
 #include <avr/pgmspace.h>
+#include <avr/wdt.h>
 #include <time.h>
 
 #define NO_LED_FEEDBACK_CODE
@@ -65,23 +67,22 @@ void setup() {
   lcd.print(F("ﾀｲﾏｰﾘﾓｺﾝ V0.1"));
   delay(1000);
 
+  Narcoleptic.disableSerial();
+  Narcoleptic.disableSPI();
+
   //データ読み込み
   LoadFromEEPROM();
 }
 
 void loop() {
-  //時間更新 100ミリ秒毎に更新 なんか、毎回更新するのは忙しそうなので・・・
-  unsigned long span = millis() - prevGetTime;
-  if (span > 100) {
-    RX8900.getDateTime(&tim);
-  }
+  RX8900.getDateTime(&tim);
 
   // アラーム処理
   AlarmProcessing();
 
   // lcdバックライト処理
-  span = millis() - prevButtonMillis;
-  if (span > LCDbacklightOnMillis) {
+  prevButtonMillis++;
+  if (prevButtonMillis > 5000 / 15) {
     SetLCDbacklight(false);
   }
 
@@ -132,6 +133,9 @@ void loop() {
     default:
       break;
   }
+
+  // delayWDT(WDTO_250MS);
+  Narcoleptic.sleep(WDTO_15MS);
 }
 
 //アラーム処理
@@ -342,7 +346,7 @@ buttonStatus GetButton() {
   //ボタンが押されたら、バックライトをつけて現在時間を記録
   if (button != buttonStatus::NOT_PRESSED) {
     SetLCDbacklight(true);
-    prevButtonMillis = millis();
+    prevButtonMillis = 0;
   }
   return button;
 }
