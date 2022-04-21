@@ -30,10 +30,12 @@ enum ModeMessage {
   Alarm,
   TimeSetting,
   DeleteData,
+  AlarmTest,
   LearnDetail,
   AlarmDetail,
   TimeSettingDetail,
   DeleteDataDetail,
+  AlarmTestDetail,
 };
 
 struct AlarmSetting {

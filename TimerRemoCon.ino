@@ -130,6 +130,15 @@ void loop() {
       DeleteDataMode();
       message = ModeMessage::DateTime;
       break;
+    case ModeMessage::AlarmTest:
+      lcd.print(F("IR ﾃｽﾄ          "));
+      lcd.setCursor(0, 1);
+      lcd.print(F("                "));
+      break;
+    case ModeMessage::AlarmTestDetail:
+      IrSendTest();
+      message = ModeMessage::DateTime;
+      break;
     default:
       break;
   }
@@ -201,6 +210,9 @@ void SetModeMessage() {
         message = ModeMessage::DeleteData;
         break;
       case ModeMessage::DeleteData:
+        message = ModeMessage::AlarmTest;
+        break;
+      case ModeMessage::AlarmTest:
         message = ModeMessage::DateTime;
         break;
       default:
@@ -222,6 +234,9 @@ void SetModeMessage() {
       case ModeMessage::DeleteData:
         message = ModeMessage::DeleteDataDetail;
         break;
+      case ModeMessage::AlarmTest:
+        message = ModeMessage::AlarmTestDetail;
+        break;
       default:
         break;
     }
@@ -233,6 +248,7 @@ void SetModeMessage() {
       case ModeMessage::Alarm:
       case ModeMessage::TimeSetting:
       case ModeMessage::DeleteData:
+      case ModeMessage::AlarmTest:
         message = ModeMessage::DateTime;
         break;
       default:
@@ -1043,6 +1059,28 @@ void DeleteDataMode() {
   lcd.setCursor(0, 0);
   lcd.print(F("ｻｸｼﾞｮ ｶﾝﾘｮｳ     "));
   button = WaitForButton();
+}
+
+void IrSendTest() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("ｾｷｶﾞｲｾﾝﾃｽﾄ"));
+  lcd.cursor();
+  lcd.blink();
+
+  while (true) {
+    buttonStatus button = WaitForButton();
+    if (IsNumber(button)) {
+      IrSender.write(&irData[button]);
+    } else if (button == buttonStatus::BC) {
+      break;
+    } else {
+      //なにもしない
+    }
+  }
+
+  lcd.noCursor();
+  lcd.noBlink();
 }
 
 //ボタン入力を文字データに変換します。
