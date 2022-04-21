@@ -143,7 +143,6 @@ void loop() {
       break;
   }
 
-  // delayWDT(WDTO_250MS);
   Narcoleptic.sleep(WDTO_15MS);
 }
 
