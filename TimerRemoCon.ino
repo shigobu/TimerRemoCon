@@ -161,13 +161,13 @@ void AlarmProcessing() {
 
       if ((alarmSetting[alarmIndex].week & tim.week) > 0) {
         //送信
-        if (IsIrDataAvailable(alarmIndex)) {
+        if (IsIrDataAvailable(alarmSetting[alarmIndex].irIndex)) {
           IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
         }
         alarmSetting[alarmIndex].isSent = true;
       } else if (alarmSetting[alarmIndex].week == 0) {
         //送信
-        if (IsIrDataAvailable(alarmIndex)) {
+        if (IsIrDataAvailable(alarmSetting[alarmIndex].irIndex)) {
           IrSender.write(&irData[alarmSetting[alarmIndex].irIndex]);
         }
         alarmSetting[alarmIndex].isEnable = false;
@@ -1070,7 +1070,9 @@ void IrSendTest() {
   while (true) {
     buttonStatus button = WaitForButton();
     if (IsNumber(button)) {
-      IrSender.write(&irData[button]);
+      if (IsIrDataAvailable(button)) {
+        IrSender.write(&irData[button]);
+      }
     } else if (button == buttonStatus::BC) {
       break;
     } else {
