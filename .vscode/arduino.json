@@ -1,6 +1,7 @@
 {
-    "board": "arduino:avr:uno",
+    "board": "MiniCore:avr:328",
     "programmer": "arduino:arduinoasisp",
-    "port": "COM4",
-    "sketch": "TimerRemoCon.ino"
+    "port": "COM1",
+    "sketch": "TimerRemoCon.ino",
+    "configuration": "bootloader=uart0,eeprom=erase,variant=modelP,BOD=2v7,LTO=Os,clock=8MHz_external"
 }

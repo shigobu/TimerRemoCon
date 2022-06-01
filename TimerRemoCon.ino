@@ -14,7 +14,7 @@
 #include "RX8900.h"
 #include "TimerRemoCon.h"
 
-const int LCDBacklightPin = 4;
+const int LCDBacklightPin = 17;
 
 const int AIN2 = A0;
 const int AIN1 = A1;
@@ -25,9 +25,9 @@ PROGMEM const int threshold[KeyNum] = {
 ResKeypad keypad2(AIN2, KeyNum, threshold);
 ResKeypad keypad1(AIN1, KeyNum, threshold);
 
-KanaLiquidCrystal lcd(8, 9, 10, 11, 12, 13);
+KanaLiquidCrystal lcd(8, 10, 11, 12, 13, 16);
 //フォントの登録用
-LiquidCrystal lcdNoKana(8, 9, 10, 11, 12, 13);
+LiquidCrystal lcdNoKana(8, 10, 11, 12, 13, 16);
 
 dateTime tim;
 ModeMessage message = ModeMessage::DateTime;
@@ -37,7 +37,7 @@ unsigned int LCDbacklightOnMillis = 5000;
 unsigned long prevGetTime = 0;
 
 const int IR_RECEIVE_PIN = 2;
-const int IR_SEND_PIN = 3;
+const int IR_SEND_PIN = 9;
 // irData配列の各要素に有効な値が入っているかどうかをフラグで表している。下桁から順に格納されている。
 int16_t irDataAvailables = 0;
 const int dataMaxNum = 10;
@@ -187,7 +187,7 @@ void initWeekFont() {
   for (int nb = 0; nb < 7; nb++) {
     for (int bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte(&weekFont[nb][bc]);
     //カナ対応版のライブラリだと何故か正常に登録できなかったので、通常版を使用。kanaOff()を使用してもダメだった。
-    lcdNoKana.createChar(nb + 1, bb);
+    lcdNoKana.createChar(nb, bb);
   }
 }
 
@@ -507,6 +507,7 @@ void AlarmMode() {
   }
   PrintAlarmSetting(newAlarmSetting, 0, 1);
   buttonStatus button;
+  bool isCustom = false;
 
 alarmNumInput:
   while (true) {
@@ -563,7 +564,6 @@ enableInput:
     }
   }
 
-  bool isCustom = false;
 weekNumInput:
   PrintAlarmSetting(newAlarmSetting, 0, 1, true);
   while (true) {
@@ -736,7 +736,7 @@ finally:
 
 //指定のインデックスのアラーム設定情報をLCDに表示します。
 void PrintAlarmSetting(AlarmSetting& alarm, uint8_t col, uint8_t row,
-                       bool printWeekNum = false) {
+                       bool printWeekNum) {
   lcd.setCursor(col, row);
   lcd.print("                ");
   lcd.setCursor(col, row);
