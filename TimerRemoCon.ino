@@ -9,6 +9,10 @@
 #include <time.h>
 
 #define NO_LED_FEEDBACK_CODE
+#define SEND_PWM_BY_TIMER
+//#define IR_SEND_PIN 9     IRTimer.hpp
+//を編集して送信PINを変更している。SEND_PWM_BY_TIMER
+//使用時はこうする必要がある。
 #include <IRremote.hpp>
 
 #include "RX8900.h"
@@ -30,14 +34,16 @@ KanaLiquidCrystal lcd(8, 10, 11, 12, 13, 16);
 LiquidCrystal lcdNoKana(8, 10, 11, 12, 13, 16);
 
 dateTime tim;
+tm timeHstruct;
 ModeMessage message = ModeMessage::DateTime;
 
 unsigned long prevButtonMillis = 0;
-unsigned int LCDbacklightOnMillis = 5000;
+unsigned int LCDbacklightOnMillis = 10000;
 unsigned long prevGetTime = 0;
+const int wakeupINT = 1;
+volatile bool isSleeping = false;
 
 const int IR_RECEIVE_PIN = 2;
-const int IR_SEND_PIN = 9;
 // irData配列の各要素に有効な値が入っているかどうかをフラグで表している。下桁から順に格納されている。
 int16_t irDataAvailables = 0;
 const int dataMaxNum = 10;
@@ -62,7 +68,7 @@ void setup() {
   RX8900.begin();
   IrReceiver.begin(IR_RECEIVE_PIN, false);
   IrReceiver.stop();
-  IrSender.begin(IR_SEND_PIN, false);
+  IrSender.begin(false);
   lcd.setCursor(0, 0);
   lcd.print(F("ﾀｲﾏｰﾘﾓｺﾝ V0.1"));
   delay(1000);
@@ -72,6 +78,9 @@ void setup() {
 
   //データ読み込み
   LoadFromEEPROM();
+
+  //スリープ復帰する割り込み
+  attachInterrupt(wakeupINT, WakeupFunction, FALLING);
 }
 
 void loop() {
@@ -79,12 +88,6 @@ void loop() {
 
   // アラーム処理
   AlarmProcessing();
-
-  // lcdバックライト処理
-  prevButtonMillis++;
-  if (prevButtonMillis > 5000 / 15) {
-    SetLCDbacklight(false);
-  }
 
   lcd.home();
   //メッセージの設定
@@ -143,7 +146,36 @@ void loop() {
       break;
   }
 
-  Narcoleptic.sleep(WDTO_15MS);
+  //スリープ
+  switch (GetModeMessage()) {
+    case ModeMessage::DateTime:
+      if (millis() - prevButtonMillis > LCDbacklightOnMillis) {
+        isSleeping = true;
+        SetLCDbacklight(false);
+        //バックライト消灯と同時に秒数を消すためにここでも時間表示
+        DispDateTime();
+        Narcoleptic.sleepAdv(WDTO_1S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+      }
+      break;
+    case ModeMessage::Learn:
+    case ModeMessage::Alarm:
+    case ModeMessage::TimeSetting:
+    case ModeMessage::DeleteData:
+    case ModeMessage::AlarmTest:
+    case ModeMessage::LearnDetail:
+    case ModeMessage::AlarmDetail:
+    case ModeMessage::TimeSettingDetail:
+    case ModeMessage::DeleteDataDetail:
+    case ModeMessage::AlarmTestDetail:
+      prevButtonMillis = millis();
+  }
+}
+
+//スリープから復帰した時のメソッド
+void WakeupFunction() {
+  isSleeping = false;
+  SetLCDbacklight(true);
+  prevButtonMillis = millis();
 }
 
 //アラーム処理
@@ -295,12 +327,17 @@ void DispDateTime() {
     lcd.print('0');
   }
   lcd.print(tim.minute);
-  lcd.print(":");
 
-  if (tim.second < 10) {
-    lcd.print('0');
+  if (isSleeping) {
+    lcd.print(F("   "));
+  } else {
+    lcd.print(":");
+    if (tim.second < 10) {
+      lcd.print('0');
+    }
+    lcd.print(tim.second);
   }
-  lcd.print(tim.second);
+
   lcd.print(F("        "));
 }
 
@@ -357,11 +394,6 @@ buttonStatus GetButton() {
     case 6:
       button = buttonStatus::BC;
       break;
-  }
-  //ボタンが押されたら、バックライトをつけて現在時間を記録
-  if (button != buttonStatus::NOT_PRESSED) {
-    SetLCDbacklight(true);
-    prevButtonMillis = 0;
   }
   return button;
 }
@@ -993,23 +1025,21 @@ sec2Input:
 void PrintWeekDayToLcd() {
   lcd.setCursor(10, 0);
   // time.hの機能を使用し、曜日の算出
-  tm timeHstruct;
   timeHstruct.tm_sec = 0;
   timeHstruct.tm_min = 0;
-  timeHstruct.tm_hour = 1;
+  timeHstruct.tm_hour = 0;
   timeHstruct.tm_mday = tim.day;
   timeHstruct.tm_mon = tim.month - 1;
   timeHstruct.tm_year = 2000 + tim.year - 1900;
+
   // mktimeを呼ぶことで、曜日が計算され、引数で渡した構造体が変更される
   mktime(&timeHstruct);
 
   tim.week = GetRX8900WeekDayFromTimeHData(timeHstruct.tm_wday);
-  lcd.kanaOff();
-  lcd.print("(");
-  lcd.write(timeHstruct.tm_wday + 1);
-  lcd.print(")");
-  lcd.print("   ");
-  lcd.kanaOn();
+  lcdNoKana.print("(");
+  lcdNoKana.write(timeHstruct.tm_wday);
+  lcdNoKana.print(")");
+  lcdNoKana.print("   ");
 }
 
 //データ削除本体
