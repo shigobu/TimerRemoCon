@@ -345,6 +345,10 @@ void DispDateTime() {
 buttonStatus GetButton() {
   buttonStatus button = buttonStatus::NOT_PRESSED;
 
+  if (isSleeping) {
+    return button;
+  }
+
   signed char key;
   key = keypad1.GetKey();
   switch (key) {
