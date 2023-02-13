@@ -1,6 +1,6 @@
 #include <EEPROM.h>
 #include <KanaLiquidCrystal.h>  // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
-#include <LiquidCrystal.h>  // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
+#include <LiquidCrystal.h>      // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
 #include <Narcoleptic.h>
 #include <ResKeypad.h>
 #include <Wire.h>
@@ -24,8 +24,9 @@ const int AIN2 = A0;
 const int AIN1 = A1;
 const int KeyNum = 7;
 PROGMEM const int threshold[KeyNum] = {
-    // 次の数列は、しなぷすのハード製作記の回路設計サービスで計算して得られたもの
-    42, 165, 347, 511, 641, 807, 965};
+  // 次の数列は、しなぷすのハード製作記の回路設計サービスで計算して得られたもの
+  42, 165, 347, 511, 641, 807, 965
+};
 ResKeypad keypad2(AIN2, KeyNum, threshold);
 ResKeypad keypad1(AIN1, KeyNum, threshold);
 
@@ -186,8 +187,7 @@ void WakeupFunction() {
 //アラーム処理
 void AlarmProcessing() {
   for (size_t alarmIndex = 0; alarmIndex < dataMaxNum; alarmIndex++) {
-    if (alarmSetting[alarmIndex].hour == tim.hour &&
-        alarmSetting[alarmIndex].minute == tim.minute) {
+    if (alarmSetting[alarmIndex].hour == tim.hour && alarmSetting[alarmIndex].minute == tim.minute) {
       if (!alarmSetting[alarmIndex].isEnable) {
         continue;
       }
@@ -220,8 +220,8 @@ void AlarmProcessing() {
 
 //フォントの登録
 void initWeekFont() {
-  uint8_t bb[8] = {0};
-  for (int nb = 0; nb < 7; nb++) {
+  uint8_t bb[8] = { 0 };
+  for (int nb = 0; nb < 8; nb++) {
     for (int bc = 0; bc < 8; bc++) bb[bc] = pgm_read_byte(&weekFont[nb][bc]);
     //カナ対応版のライブラリだと何故か正常に登録できなかったので、通常版を使用。kanaOff()を使用してもダメだった。
     lcdNoKana.createChar(nb, bb);
@@ -294,7 +294,9 @@ void SetModeMessage() {
 }
 
 //モードメッセージを取得します。
-ModeMessage GetModeMessage() { return message; }
+ModeMessage GetModeMessage() {
+  return message;
+}
 
 // LCDに時間を表示します。
 void DispDateTime() {
@@ -319,6 +321,7 @@ void DispDateTime() {
   lcd.print(tim.day);
 
   PrintWeekDayToLcd();
+  PrintBatteryIndicator();
 
   //時間
   lcd.setCursor(0, 1);
@@ -840,7 +843,9 @@ void PrintWeekSetName(uint8_t week, bool printWeekNum) {
 }
 
 //カスタム週設定をユーザーに促します。
-uint8_t SetCustomWeekSetting() { return 0; }
+uint8_t SetCustomWeekSetting() {
+  return 0;
+}
 
 //時間設定本体
 void TimeSettingMode() {
@@ -1048,7 +1053,24 @@ void PrintWeekDayToLcd() {
   lcdNoKana.print("(");
   lcdNoKana.write(timeHstruct.tm_wday);
   lcdNoKana.print(")");
-  lcdNoKana.print("   ");
+}
+
+// LCDに電池残量を表示します
+void PrintBatteryIndicator() {
+  long sum = 0;
+  for (int n = 0; n < 10; n++) {
+    sum = sum + GetIntRef();  // adcの値を読んで積分
+  }
+  float adcAverage = sum / 10.0;
+  float vccVal = (1023.0 / adcAverage) * INT_REF_VOLT;
+
+  //終止電圧以下の場合、「電」表示
+  if (vccVal < 3.0) {
+    lcdNoKana.print("  ");
+    lcdNoKana.write(7);
+  } else {
+    lcdNoKana.print("   ");
+  }
 }
 
 //データ削除本体
@@ -1151,7 +1173,9 @@ char GetCharFromButton(buttonStatus button) {
   }
 }
 
-void SetLCDbacklight(bool isOn) { digitalWrite(LCDBacklightPin, isOn); }
+void SetLCDbacklight(bool isOn) {
+  digitalWrite(LCDBacklightPin, isOn);
+}
 
 // RX8900の週情報からtime.hの週情報へ変換して返します。
 int8_t GetTimeHweekDayFromRX8900Data(uint8_t weekBitData) {
@@ -1205,4 +1229,20 @@ bool IsNumber(buttonStatus button) {
 //指定の番号のIRDataに有効なデータが入っているどうかをかえします。
 bool IsIrDataAvailable(int8_t index) {
   return (irDataAvailables & 1 << index) > 0;
+}
+
+//1.1V内蔵基準電圧のアナログ読み取り値を返します。
+int GetIntRef() {
+  //REFSに01を設定　測定対象を1.1V内蔵基準電圧に設定
+  ADMUX = (1 << 6) | (0xE & 0x0F);
+
+  // A/D変換開始
+  ADCSRA |= _BV(ADSC);
+
+  // ADSC is cleared when the conversion finishes
+  while (ADCSRA & _BV(ADSC)) {};
+
+  // ADC macro takes care of reading ADC register.
+  // avr-gcc implements the proper reading order: ADCL is read first.
+  return ADC;
 }
