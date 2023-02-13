@@ -154,7 +154,11 @@ void loop() {
         SetLCDbacklight(false);
         //バックライト消灯と同時に秒数を消すためにここでも時間表示
         DispDateTime();
-        Narcoleptic.sleepAdv(WDTO_1S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+        if (tim.second > 50) {
+          Narcoleptic.sleepAdv(WDTO_1S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+        } else {
+          Narcoleptic.sleepAdv(WDTO_4S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+        }
       }
       break;
     case ModeMessage::Learn:
@@ -168,6 +172,7 @@ void loop() {
     case ModeMessage::DeleteDataDetail:
     case ModeMessage::AlarmTestDetail:
       prevButtonMillis = millis();
+      break;
   }
 }
 
