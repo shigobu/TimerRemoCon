@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 #include <KanaLiquidCrystal.h>  // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
 #include <LiquidCrystal.h>      // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
-#include <Narcoleptic.h>
+#include "LowPower.h"
 #include <ResKeypad.h>
 #include <Wire.h>
 #include <avr/pgmspace.h>
@@ -45,16 +45,21 @@ const int wakeupINT = 1;
 volatile bool isSleeping = false;
 
 const int IR_RECEIVE_PIN = 2;
+const int IR_POWER_PIN = 4;
 // irData配列の各要素に有効な値が入っているかどうかをフラグで表している。下桁から順に格納されている。
 int16_t irDataAvailables = 0;
 const int dataMaxNum = 10;
 IRData irData[dataMaxNum];
 AlarmSetting alarmSetting[dataMaxNum];
+//電池終止電圧
+const float finalVoltage = 3.1;
 
 void setup() {
   pinMode(LCDBacklightPin, OUTPUT);
   pinMode(AIN1, INPUT);
   pinMode(AIN2, INPUT);
+  pinMode(IR_POWER_PIN, OUTPUT);
+  digitalWrite(IR_POWER_PIN, LOW);
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -71,11 +76,8 @@ void setup() {
   IrReceiver.stop();
   IrSender.begin(false);
   lcd.setCursor(0, 0);
-  lcd.print(F("ﾀｲﾏｰﾘﾓｺﾝ V0.1"));
+  lcd.print(F("ﾀｲﾏｰﾘﾓｺﾝ V0.2"));
   delay(1000);
-
-  Narcoleptic.disableSerial();
-  Narcoleptic.disableSPI();
 
   //データ読み込み
   LoadFromEEPROM();
@@ -156,9 +158,9 @@ void loop() {
         //バックライト消灯と同時に秒数を消すためにここでも時間表示
         DispDateTime();
         if (tim.second > 50) {
-          Narcoleptic.sleepAdv(WDTO_1S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+          LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);
         } else {
-          Narcoleptic.sleepAdv(WDTO_4S, SLEEP_MODE_PWR_DOWN, _BV(INT1));
+          LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
         }
       }
       break;
@@ -425,6 +427,7 @@ void LearnMode() {
   lcd.print(F("ﾄｳﾛｸﾊﾞﾝｺﾞｳｼﾃｲ:0 "));
   lcd.cursor();
   lcd.blink();
+  SetIrPower(true);
 
   int8_t alarmDataIndex = 0;
   if (IsIrDataAvailable(alarmDataIndex)) {
@@ -469,7 +472,7 @@ numInput:
   //赤外線信号受信待機
   while (!IrReceiver.available()) {
     if (GetButton() == buttonStatus::BC) {
-      return;
+      goto delayfinally;
     };
   }
 
@@ -503,6 +506,7 @@ finally:
   IrReceiver.stop();
   lcd.noCursor();
   lcd.noBlink();
+  SetIrPower(false);
 }
 
 // EEPROMへ保存します
@@ -1065,7 +1069,7 @@ void PrintBatteryIndicator() {
   float vccVal = (1023.0 / adcAverage) * INT_REF_VOLT;
 
   //終止電圧以下の場合、「電」表示
-  if (vccVal < 3.0) {
+  if (vccVal < finalVoltage) {
     lcdNoKana.print("  ");
     lcdNoKana.write(7);
   } else {
@@ -1175,6 +1179,10 @@ char GetCharFromButton(buttonStatus button) {
 
 void SetLCDbacklight(bool isOn) {
   digitalWrite(LCDBacklightPin, isOn);
+}
+
+void SetIrPower(bool isOn) {
+  digitalWrite(IR_POWER_PIN, isOn);
 }
 
 // RX8900の週情報からtime.hの週情報へ変換して返します。
