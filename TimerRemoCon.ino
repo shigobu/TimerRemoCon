@@ -1,3 +1,8 @@
+/* Board Setting 
+ * Bord MiniCore ATmega328
+ * Clock External 8 MHz
+ */
+
 #include <EEPROM.h>
 #include <KanaLiquidCrystal.h>  // この#includeで、KanaLiquidCrystalライブラリを呼び出します。
 #include <LiquidCrystal.h>      // LiquidCrystalライブラリも間接的に使うので、この#includeも必要です
@@ -51,8 +56,8 @@ int16_t irDataAvailables = 0;
 const int dataMaxNum = 10;
 IRData irData[dataMaxNum];
 AlarmSetting alarmSetting[dataMaxNum];
-//電池終止電圧
-const float finalVoltage = 3.1;
+//電池残量表示しきい値
+const float finalVoltage = 3.4;
 
 void setup() {
   pinMode(LCDBacklightPin, OUTPUT);
@@ -1067,7 +1072,7 @@ void PrintBatteryIndicator() {
   }
   float adcAverage = sum / 10.0;
   float vccVal = (1023.0 / adcAverage) * INT_REF_VOLT;
-
+  
   //終止電圧以下の場合、「電」表示
   if (vccVal < finalVoltage) {
     lcdNoKana.print("  ");
