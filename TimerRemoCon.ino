@@ -57,7 +57,7 @@ const int dataMaxNum = 10;
 IRData irData[dataMaxNum];
 AlarmSetting alarmSetting[dataMaxNum];
 //電池残量表示しきい値
-const float finalVoltage = 3.4;
+const float finalVoltage = 3.5;
 
 void setup() {
   pinMode(LCDBacklightPin, OUTPUT);
